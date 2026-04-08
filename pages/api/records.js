@@ -1,5 +1,3 @@
-// 파일 위치: pages/api/records.js
-
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
 
 export default async function handler(req, res) {
