@@ -103,7 +103,7 @@ function BuyerApp() {
     fetch("/api/records")
       .then(r => r.json())
       .then(data => {
-        if (data.records && data.records.length > 0) setRecords(data.records);
+        if (data.records) setRecords(data.records);
         setSyncStatus("idle");
       })
       .catch(() => setSyncStatus("error"));
