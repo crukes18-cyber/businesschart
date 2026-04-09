@@ -164,52 +164,42 @@ function BuyerApp({ currentUser, onLogout }) {
     }).catch(()=>{});
   };
 
-  // 저장 전 최신 데이터 fetch → 병합 후 저장 (동시 편집 충돌 방지)
-  const autoSave = async (localRecords) => {
+  // 액션 기반 저장: 항상 Sheets 최신 데이터에 액션을 적용
+  // type: "add" | "edit" | "delete"  /  record: 변경된 기록
+  const autoSave = async (type, record) => {
     setSyncStatus("saving");
     try {
-      // 1. 현재 Sheets에 저장된 최신 데이터 불러오기
+      // 1. Sheets에서 항상 최신 데이터 먼저 불러오기
       const latestRes = await fetch("/api/records");
       const latestData = await latestRes.json();
-      const sheetsRecords = latestData.records || [];
+      const latest = latestData.records || [];
 
-      // 2. 병합: ID 기준으로 합치기
-      //    - Sheets에만 있는 기록 (다른 사람이 추가한 것) → 유지
-      //    - local에만 있는 기록 (내가 추가한 것) → 추가
-      //    - 둘 다 있는 기록 → updatedAt 최신 것 사용
-      const sheetsMap = new Map(sheetsRecords.map(r => [r.id, r]));
-      const localMap = new Map(localRecords.map(r => [r.id, r]));
-      const allIds = new Set([...sheetsMap.keys(), ...localMap.keys()]);
+      // 2. 최신 데이터에 내 액션 적용
+      let result;
+      if (type === "add") {
+        // 이미 같은 ID가 있으면 중복 추가 방지
+        const exists = latest.find(r => r.id === record.id);
+        result = exists ? latest : [...latest, record];
+      } else if (type === "edit") {
+        // Sheets에 해당 ID 있으면 수정, 없으면 추가
+        const exists = latest.find(r => r.id === record.id);
+        result = exists
+          ? latest.map(r => r.id === record.id ? record : r)
+          : [...latest, record];
+      } else if (type === "delete") {
+        result = latest.filter(r => r.id !== record.id);
+      } else {
+        result = latest;
+      }
 
-      const merged = [];
-      allIds.forEach(id => {
-        const s = sheetsMap.get(id);
-        const l = localMap.get(id);
-        if (!l) {
-          // Sheets에만 있음 (다른 사람이 추가) → 유지
-          merged.push(s);
-        } else if (!s) {
-          // local에만 있음 (내가 추가) → 추가
-          merged.push(l);
-        } else {
-          // 둘 다 있음 → updatedAt 비교해서 최신 것 사용
-          const sTime = new Date(s.updatedAt || 0).getTime();
-          const lTime = new Date(l.updatedAt || 0).getTime();
-          merged.push(lTime >= sTime ? l : s);
-        }
-      });
-
-      // id 순서 정렬
-      merged.sort((a, b) => (a.id > b.id ? 1 : -1));
-
-      // 3. 병합된 데이터로 화면 업데이트
-      setRecords(merged);
+      // 3. 화면도 최신 상태로 업데이트
+      setRecords(result);
 
       // 4. Sheets에 저장
       const res = await fetch("/api/records", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ records: merged }),
+        body: JSON.stringify({ records: result }),
       });
       const data = await res.json();
       if (data.ok) {
@@ -259,21 +249,17 @@ function BuyerApp({ currentUser, onLogout }) {
     a.click(); URL.revokeObjectURL(url);
   };
 
+  // 수동 저장 버튼 — 최신 데이터 불러오기 (새로고침 역할)
   const handleSave = async () => {
-    setSyncStatus("saving");
+    setSyncStatus("loading");
     try {
-      const res = await fetch("/api/records", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ records }),
-      });
+      const res = await fetch("/api/records");
       const data = await res.json();
-      if (data.ok) {
+      if (data.records) {
+        setRecords(data.records);
         setSyncStatus("saved");
         setLastSaved(new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }));
-        setTimeout(() => setSyncStatus("idle"), 3000);
-      } else {
-        setSyncStatus("error");
+        setTimeout(() => setSyncStatus("idle"), 2000);
       }
     } catch {
       setSyncStatus("error");
@@ -296,7 +282,7 @@ function BuyerApp({ currentUser, onLogout }) {
     const updated = [...records, newRecord];
     setRecords(updated);
     writeLog("기록 추가", `${form.brand} (${form.woojooManager})`);
-    autoSave(updated);
+    autoSave("add", newRecord);
     setModal(null); setForm({ ...EMPTY }); showToast("✓ 기록 추가됨");
   };
   const startEdit = (r) => { setEditingId(r.id); setForm({ ...r }); setModal("edit"); };
@@ -306,7 +292,7 @@ function BuyerApp({ currentUser, onLogout }) {
     setRecords(updated);
     if (detail && detail.id === editingId) setDetail(u);
     writeLog("기록 수정", `${form.brand} (${form.woojooManager})`);
-    autoSave(updated);
+    autoSave("edit", u);
     setModal(null); setEditingId(null); setForm({ ...EMPTY }); showToast("✓ 수정됨");
   };
 
@@ -324,7 +310,7 @@ function BuyerApp({ currentUser, onLogout }) {
     const updated = records.filter(r => r.id !== confirmDelete.id);
     setRecords(updated);
     writeLog("기록 삭제", `${rec?.brand} (${rec?.woojooManager})`);
-    autoSave(updated);
+    autoSave("delete", rec);
     setConfirmDelete(null);
     showToast("✓ 삭제됨");
     const tid = setTimeout(() => setUndoNotice(null), 5000);
@@ -349,7 +335,7 @@ function BuyerApp({ currentUser, onLogout }) {
     const updated = records.map((r) => r.id === id ? u : r);
     setRecords(updated);
     if (detail && detail.id === id) setDetail(u);
-    autoSave(updated);
+    autoSave("edit", u);
     showToast(`✓ 상태 → "${status}"`);
   };
 
@@ -360,7 +346,7 @@ function BuyerApp({ currentUser, onLogout }) {
     const updated = records.map((r) => r.id === detail.id ? u : r);
     setRecords(updated);
     setDetail(u); setMemoText("");
-    autoSave(updated);
+    autoSave("edit", u);
     showToast("✓ 메모 추가됨");
   };
   const deleteMemo = (memoId) => { const u = { ...detail, memos: detail.memos.filter((m) => m.id !== memoId) }; setRecords((p) => p.map((r) => r.id === detail.id ? u : r)); setDetail(u); };
