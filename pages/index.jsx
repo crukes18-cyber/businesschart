@@ -11,17 +11,21 @@ const STATUS_BG = { "완료": "#EAF3DE", "대기": "#FEF3C7", "진행": "#E6F1FB
 const STATUSES = ["완료", "대기", "진행", "취소"];
 const now = () => { const d = new Date(); return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; };
 
+// 날짜 변환 헬퍼 (표시용: 2026.04.08 ↔ input용: 2026-04-08)
+const toInputDate = (d) => d ? d.replace(/\./g, "-") : "";
+const toDisplayDate = (d) => d ? d.replace(/-/g, ".") : "";
+
 const DEFAULT_RECORDS = [
-  { id: 1, requestDate: "2025.07.28", dueDate: "2025.08.15", completeDate: "2025.08.10", buyer: "BUYER E", brand: "Alpha Sports", brandManager: "James K.", woojooManager: "김은석", content: "첫 접촉 — 유럽 친환경 인증 소재 관심 확인", status: "완료", nextStep: "인증서 및 소재 사양서 발송", pendingReason: "—", memos: [{ id: 1, text: "유럽 OEKO-TEX 인증 관련 문의 — 인증서 사본 첨부 완료", date: "2025.08.12 09:30" }] },
-  { id: 2, requestDate: "2025.09.01", dueDate: "2025.09.20", completeDate: "2025.09.15", buyer: "BUYER A", brand: "B", brandManager: "", woojooManager: "이지은", content: "첫 미팅 — 소재 라인업 소개, SS26 니즈 청취", status: "완료", nextStep: "스와치 발송 요청", pendingReason: "—", memos: [] },
-  { id: 3, requestDate: "2025.09.10", dueDate: "2025.09.25", completeDate: "2025.09.20", buyer: "BUYER E", brand: "C", brandManager: "James K.", woojooManager: "김은석", content: "소재 승인 완료 — SS26 500yds 발주 확정", status: "완료", nextStep: "발주서 접수 및 생산 일정 공유", pendingReason: "—", memos: [] },
-  { id: 4, requestDate: "2025.09.30", dueDate: "2025.10.15", completeDate: "2025.10.08", buyer: "BUYER A", brand: "D", brandManager: "", woojooManager: "박성민", content: "스와치 전달, DNT-4034 foil print 타당성 논의", status: "대기", nextStep: "가먼트 워시 샘플 제작 착수", pendingReason: "워시 테스트 결과 대기", memos: [{ id: 1, text: "가먼트 워시 테스트 3회 진행 예정, 결과 2주 후 공유", date: "2025.10.10 14:20" }, { id: 2, text: "1차 워시 테스트 완료 — 수축률 2.1%, 기준 이내\n2차 테스트 다음 주 진행", date: "2025.10.18 11:00" }] },
-  { id: 5, requestDate: "2025.10.10", dueDate: "2025.11.01", completeDate: "2025.10.20", buyer: "BUYER C", brand: "E", brandManager: "Sarah L.", woojooManager: "최현아", content: "첫 미팅 — FW26 소재 니즈 파악, Woven-touch 관심 확인", status: "진행", nextStep: "스와치 3종 선별 발송", pendingReason: "—", memos: [] },
-  { id: 6, requestDate: "2025.10.25", dueDate: "2025.11.20", completeDate: "2025.11.05", buyer: "BUYER B", brand: "F", brandManager: "", woojooManager: "김은석", content: "인트로 미팅 — 친환경 소재 관심, 워터리스 다잉 소개", status: "대기", nextStep: "소재 카탈로그 발송", pendingReason: "—", memos: [] },
-  { id: 7, requestDate: "2025.11.01", dueDate: "2025.11.30", completeDate: "2025.11.15", buyer: "BUYER C", brand: "G", brandManager: "Sarah L.", woojooManager: "최현아", content: "스와치 리뷰 — 2종 긍정, 추가 색상 옵션 요청", status: "완료", nextStep: "색상 개발 착수", pendingReason: "—", memos: [] },
+  { id: 1, requestDate: "2025.07.28", dueDate: "2025.08.15", completeDate: "2025.08.10", brand: "Alpha Sports", brandManager: "James K.", woojooManager: "김은석", content: "첫 접촉 — 유럽 친환경 인증 소재 관심 확인", status: "완료", nextStep: "인증서 및 소재 사양서 발송", pendingReason: "—", memos: [{ id: 1, text: "유럽 OEKO-TEX 인증 관련 문의 — 인증서 사본 첨부 완료", date: "2025.08.12 09:30" }] },
+  { id: 2, requestDate: "2025.09.01", dueDate: "2025.09.20", completeDate: "2025.09.15", brand: "B", brandManager: "", woojooManager: "이지은", content: "첫 미팅 — 소재 라인업 소개, SS26 니즈 청취", status: "완료", nextStep: "스와치 발송 요청", pendingReason: "—", memos: [] },
+  { id: 3, requestDate: "2025.09.10", dueDate: "2025.09.25", completeDate: "2025.09.20", brand: "C", brandManager: "James K.", woojooManager: "김은석", content: "소재 승인 완료 — SS26 500yds 발주 확정", status: "완료", nextStep: "발주서 접수 및 생산 일정 공유", pendingReason: "—", memos: [] },
+  { id: 4, requestDate: "2025.09.30", dueDate: "2025.10.15", completeDate: "2025.10.08", brand: "D", brandManager: "", woojooManager: "박성민", content: "스와치 전달, DNT-4034 foil print 타당성 논의", status: "대기", nextStep: "가먼트 워시 샘플 제작 착수", pendingReason: "워시 테스트 결과 대기", memos: [{ id: 1, text: "가먼트 워시 테스트 3회 진행 예정, 결과 2주 후 공유", date: "2025.10.10 14:20" }, { id: 2, text: "1차 워시 테스트 완료 — 수축률 2.1%, 기준 이내\n2차 테스트 다음 주 진행", date: "2025.10.18 11:00" }] },
+  { id: 5, requestDate: "2025.10.10", dueDate: "2025.11.01", completeDate: "2025.10.20", brand: "E", brandManager: "Sarah L.", woojooManager: "최현아", content: "첫 미팅 — FW26 소재 니즈 파악, Woven-touch 관심 확인", status: "진행", nextStep: "스와치 3종 선별 발송", pendingReason: "—", memos: [] },
+  { id: 6, requestDate: "2025.10.25", dueDate: "2025.11.20", completeDate: "2025.11.05", brand: "F", brandManager: "", woojooManager: "김은석", content: "인트로 미팅 — 친환경 소재 관심, 워터리스 다잉 소개", status: "대기", nextStep: "소재 카탈로그 발송", pendingReason: "—", memos: [] },
+  { id: 7, requestDate: "2025.11.01", dueDate: "2025.11.30", completeDate: "2025.11.15", brand: "G", brandManager: "Sarah L.", woojooManager: "최현아", content: "스와치 리뷰 — 2종 긍정, 추가 색상 옵션 요청", status: "완료", nextStep: "색상 개발 착수", pendingReason: "—", memos: [] },
 ];
 
-const EMPTY = { requestDate: "", dueDate: "", completeDate: "", buyer: "", brand: "", brandManager: "", woojooManager: "", content: "", status: "대기", nextStep: "", pendingReason: "", memos: [] };
+const EMPTY = { requestDate: "", dueDate: "", completeDate: "", brand: "", brandManager: "", woojooManager: "", content: "", status: "대기", nextStep: "", pendingReason: "", memos: [] };
 
 // ─── Password Gate ────────────────────────────────────────────────────────────
 function PasswordGate({ onUnlock }) {
@@ -88,7 +92,6 @@ function BuyerApp() {
   const [toast, setToast] = useState(null);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("전체");
-  const [filterBuyer, setFilterBuyer] = useState("전체");
   const [filterManager, setFilterManager] = useState("전체");
   const [memoText, setMemoText] = useState("");
   const [syncStatus, setSyncStatus] = useState("idle"); // idle | loading | saving | saved | error
@@ -108,6 +111,26 @@ function BuyerApp() {
       })
       .catch(() => setSyncStatus("error"));
   }, []);
+
+  const handleExcelDownload = () => {
+    const rows = [
+      ["브랜드", "브랜드담당", "우주담당", "의뢰일", "납기일", "완료일", "상태", "진행내용", "다음단계", "펜딩사유"],
+      ...records.map(r => [
+        r.brand || "", r.brandManager || "", r.woojooManager || "",
+        r.requestDate || "", r.dueDate || "", r.completeDate || "",
+        r.status || "", r.content || "", r.nextStep || "", r.pendingReason || ""
+      ])
+    ];
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+    const BOM = "﻿";
+    const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,"0")}${String(today.getDate()).padStart(2,"0")}`;
+    a.href = url; a.download = `바이어기록카드_${dateStr}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  };
 
   const handleSave = async () => {
     setSyncStatus("saving");
@@ -131,15 +154,13 @@ function BuyerApp() {
   };
 
   const showToast = useCallback((msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); }, []);
-  const buyers = useMemo(() => { const s = new Set(records.map((r) => r.buyer).filter(Boolean)); return ["전체", ...Array.from(s).sort()]; }, [records]);
   const managers = useMemo(() => { const s = new Set(records.map((r) => r.woojooManager).filter(Boolean)); return ["전체", ...Array.from(s).sort()]; }, [records]);
   const filtered = useMemo(() => records.filter((r) => {
     if (filterStatus !== "전체" && r.status !== filterStatus) return false;
-    if (filterBuyer !== "전체" && r.buyer !== filterBuyer) return false;
     if (filterManager !== "전체" && r.woojooManager !== filterManager) return false;
-    if (search) { const q = search.toLowerCase(); return [r.buyer, r.brand, r.content, r.nextStep].some((v) => (v||"").toLowerCase().includes(q)); }
+    if (search) { const q = search.toLowerCase(); return [r.brand, r.brandManager, r.content, r.nextStep, r.woojooManager].some((v) => (v||"").toLowerCase().includes(q)); }
     return true;
-  }), [records, filterStatus, filterBuyer, search]);
+  }), [records, filterStatus, filterManager, search]);
   const stats = useMemo(() => ({ total: records.length, done: records.filter((r) => r.status === "완료").length, waiting: records.filter((r) => r.status === "대기").length, progress: records.filter((r) => r.status === "진행").length }), [records]);
 
   const handleAdd = () => { const mx = records.reduce((m, r) => Math.max(m, r.id), 0); setRecords((p) => [...p, { ...form, id: mx+1, memos: [] }]); setModal(null); setForm({ ...EMPTY }); showToast("✓ 기록 추가됨"); };
@@ -148,7 +169,7 @@ function BuyerApp() {
 
   const requestDelete = (id) => {
     const rec = records.find(r => r.id === id);
-    setConfirmDelete({ id, name: `${rec?.buyer} — ${rec?.brand || rec?.content?.slice(0,20)}` });
+    setConfirmDelete({ id, name: `${rec?.brand || rec?.content?.slice(0,20)}` });
     setModal(null);
     setDetail(null);
   };
@@ -211,19 +232,18 @@ function BuyerApp() {
       <div style={S.formModal} onClick={(e) => e.stopPropagation()}>
         <h3 style={{ margin: "0 0 20px", fontSize: 17, fontWeight: 700 }}>{isEdit ? "기록 수정" : "새 기록 추가"}</h3>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <div><label style={S.label}>바이어</label><input style={S.input} value={form.buyer} onChange={(e) => setForm((f) => ({ ...f, buyer: e.target.value }))} placeholder="BUYER A" /></div>
-          <div><label style={S.label}>브랜드</label><input style={S.input} value={form.brand} onChange={(e) => setForm((f) => ({ ...f, brand: e.target.value }))} /></div>
-          <div><label style={S.label}>의뢰일</label><input style={S.input} value={form.requestDate} onChange={(e) => setForm((f) => ({ ...f, requestDate: e.target.value }))} placeholder="2026.01.01" /></div>
-          <div><label style={S.label}>납기일</label><input style={S.input} value={form.dueDate} onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))} placeholder="2026.02.01" /></div>
-          <div><label style={S.label}>완료일</label><input style={S.input} value={form.completeDate} onChange={(e) => setForm((f) => ({ ...f, completeDate: e.target.value }))} placeholder="2026.01.20" /></div>
+          <div><label style={S.label}>브랜드</label><input style={S.input} value={form.brand} onChange={(e) => setForm((f) => ({ ...f, brand: e.target.value }))} placeholder="브랜드명" /></div>
+          <div><label style={S.label}>브랜드 담당</label><input style={S.input} value={form.brandManager} onChange={(e) => setForm((f) => ({ ...f, brandManager: e.target.value }))} placeholder="담당자 이름" /></div>
+          <div><label style={S.label}>의뢰일</label><input type="date" style={S.input} value={toInputDate(form.requestDate)} onChange={(e) => setForm((f) => ({ ...f, requestDate: toDisplayDate(e.target.value) }))} /></div>
+          <div><label style={S.label}>납기일</label><input type="date" style={S.input} value={toInputDate(form.dueDate)} onChange={(e) => setForm((f) => ({ ...f, dueDate: toDisplayDate(e.target.value) }))} /></div>
+          <div><label style={S.label}>완료일</label><input type="date" style={S.input} value={toInputDate(form.completeDate)} onChange={(e) => setForm((f) => ({ ...f, completeDate: toDisplayDate(e.target.value) }))} /></div>
           <div><label style={S.label}>상태</label><div style={{ display: "flex", gap: 6 }}>{STATUSES.map((st) => (<button key={st} onClick={() => setForm((f) => ({ ...f, status: st }))} style={{ ...S.badge(st), cursor: "pointer", border: form.status === st ? "2px solid " + STATUS_COLORS[st] : "2px solid transparent", padding: "5px 14px", fontSize: 12 }}>{st}</button>))}</div></div>
-          <div><label style={S.label}>브랜드 담당</label><input style={S.input} value={form.brandManager} onChange={(e) => setForm((f) => ({ ...f, brandManager: e.target.value }))} /></div>
-          <div><label style={S.label}>우주 담당</label><input style={S.input} value={form.woojooManager} onChange={(e) => setForm((f) => ({ ...f, woojooManager: e.target.value }))} /></div>
+          <div style={{ gridColumn: "1 / -1" }}><label style={S.label}>우주 담당</label><input style={S.input} value={form.woojooManager} onChange={(e) => setForm((f) => ({ ...f, woojooManager: e.target.value }))} placeholder="우주글로벌 담당자" /></div>
         </div>
         <div style={{ marginTop: 12 }}><label style={S.label}>진행 내용</label><textarea style={S.textarea} value={form.content} onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))} /></div>
         <div style={{ marginTop: 12 }}><label style={S.label}>조치 / 다음 단계</label><textarea style={{ ...S.textarea, minHeight: 45 }} value={form.nextStep} onChange={(e) => setForm((f) => ({ ...f, nextStep: e.target.value }))} /></div>
         <div style={{ marginTop: 12 }}><label style={S.label}>펜딩 사유</label><input style={S.input} value={form.pendingReason} onChange={(e) => setForm((f) => ({ ...f, pendingReason: e.target.value }))} /></div>
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}><button style={S.btn()} onClick={() => setModal(null)}>취소</button><button style={S.btn("primary")} onClick={isEdit ? handleEdit : handleAdd} disabled={!form.buyer || !form.content}>{isEdit ? "저장" : "추가"}</button></div>
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}><button style={S.btn()} onClick={() => setModal(null)}>취소</button><button style={S.btn("primary")} onClick={isEdit ? handleEdit : handleAdd} disabled={!form.brand || !form.content}>{isEdit ? "저장" : "추가"}</button></div>
       </div>
     </div>
   );
@@ -233,7 +253,7 @@ function BuyerApp() {
       <div style={S.detailModal} onClick={(e) => e.stopPropagation()}>
         <div style={{ padding: "20px 24px 0", flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div><h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>{r.buyer}</h3><div style={{ fontSize: 12, color: "#999", marginTop: 2 }}>{r.brand}</div></div>
+            <div><h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>{r.brand}</h3><div style={{ fontSize: 12, color: "#999", marginTop: 2 }}>{r.brandManager || ""}</div></div>
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span style={S.badge(r.status)}>{r.status}</span><button style={{ ...S.ib, fontSize: 18, opacity: 0.6 }} onClick={() => setModal(null)}>✕</button></div>
           </div>
           <div style={{ display: "flex", gap: 0, marginTop: 16, borderBottom: "1px solid #e8e8e4" }}>
@@ -298,6 +318,12 @@ function BuyerApp() {
           </p>
         </div>
         {/* 저장 버튼 */}
+        <button onClick={handleExcelDownload}
+          style={{ padding:"8px 18px", borderRadius:8, border:"none", cursor:"pointer",
+            fontSize:13, fontWeight:600, display:"flex", alignItems:"center", gap:6,
+            background:"#16A34A", color:"white" }}>
+          <span>⬇️</span> 엑셀 저장
+        </button>
         <button onClick={handleSave} disabled={syncStatus==="saving"||syncStatus==="loading"}
           style={{ padding:"8px 18px", borderRadius:8, border:"none", cursor: syncStatus==="saving"?"not-allowed":"pointer",
             fontSize:13, fontWeight:600, display:"flex", alignItems:"center", gap:6,
@@ -322,7 +348,6 @@ function BuyerApp() {
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 16 }}>
         <input style={{ flex: 1, minWidth: 180, padding: "8px 12px", borderRadius: 8, border: "1px solid #e0e0dc", fontSize: 12, background: "#fff", outline: "none" }} placeholder="🔍 검색..." value={search} onChange={(e) => setSearch(e.target.value)} />
         <select style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid #e0e0dc", fontSize: 12, background: "#fff" }} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}><option value="전체">상태: 전체</option>{STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}</select>
-        <select style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid #e0e0dc", fontSize: 12, background: "#fff" }} value={filterBuyer} onChange={(e) => setFilterBuyer(e.target.value)}>{buyers.map((b) => <option key={b} value={b}>{b === "전체" ? "바이어: 전체" : b}</option>)}</select>
         <select style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid #e0e0dc", fontSize: 12, background: "#fff" }} value={filterManager} onChange={(e) => setFilterManager(e.target.value)}>{managers.map((m) => <option key={m} value={m}>{m === "전체" ? "담당자: 전체" : m}</option>)}</select>
         <button style={S.btn("primary")} onClick={() => { setForm({ ...EMPTY }); setModal("add"); }}>+ 새 기록</button>
       </div>
@@ -330,7 +355,7 @@ function BuyerApp() {
       {/* Table */}
       <div style={{ overflowX: "auto" }}>
         <div style={{ display: "flex", background: "#2C3E50", color: "#fff", fontWeight: 600, fontSize: 11, borderRadius: "12px 12px 0 0", minWidth: 900 }}>
-          <div style={S.hCell(36)}>No</div><div style={S.hCell(70)}>담당자</div><div style={S.hCell(78)}>의뢰일</div><div style={S.hCell(78)}>납기일</div><div style={S.hCell(78)}>완료일</div><div style={S.hCell(80)}>바이어</div><div style={S.hCell(80)}>브랜드</div><div style={S.hCellF}>진행 내용</div><div style={S.hCell(55)}>상태</div><div style={{ ...S.hCellF, maxWidth: 150 }}>다음 단계</div><div style={S.hCell(70)}>관리</div>
+          <div style={S.hCell(36)}>No</div><div style={S.hCell(70)}>담당자</div><div style={S.hCell(78)}>의뢰일</div><div style={S.hCell(78)}>납기일</div><div style={S.hCell(78)}>완료일</div><div style={S.hCell(100)}>브랜드</div><div style={S.hCell(80)}>브랜드담당</div><div style={S.hCellF}>진행 내용</div><div style={S.hCell(55)}>상태</div><div style={{ ...S.hCellF, maxWidth: 150 }}>다음 단계</div><div style={S.hCell(70)}>관리</div>
         </div>
         {filtered.length === 0 ? (<div style={{ background: "#fff", borderRadius: "0 0 12px 12px", border: "1px solid #e8e8e4", textAlign: "center", padding: 40, color: "#999" }}>검색 결과가 없습니다</div>) : (
           <div style={{ background: "#fff", borderRadius: "0 0 12px 12px", border: "1px solid #e8e8e4", overflow: "hidden", minWidth: 900 }}>
@@ -341,8 +366,8 @@ function BuyerApp() {
                 <div style={S.cell(78)} onClick={() => openDetail(r)}><span style={{ fontSize: 11, color: "#666" }}>{r.requestDate || "—"}</span></div>
                 <div style={S.cell(78)} onClick={() => openDetail(r)}><span style={{ fontSize: 11, color: r.dueDate ? "#D85A30" : "#ccc", fontWeight: r.dueDate ? 600 : 400 }}>{r.dueDate || "—"}</span></div>
                 <div style={S.cell(78)} onClick={() => openDetail(r)}><span style={{ fontSize: 11, color: "#666" }}>{r.completeDate || "—"}</span></div>
-                <div style={S.cell(80)} onClick={() => openDetail(r)}><span style={{ fontWeight: 600, color: "#2C3E50", fontSize: 12 }}>{r.buyer}</span></div>
-                <div style={S.cell(80)} onClick={() => openDetail(r)}><span style={{ fontSize: 12 }}>{r.brand}</span></div>
+                <div style={S.cell(100)} onClick={() => openDetail(r)}><span style={{ fontWeight: 600, color: "#2C3E50", fontSize: 12 }}>{r.brand}</span></div>
+                <div style={S.cell(80)} onClick={() => openDetail(r)}><span style={{ fontSize: 12 }}>{r.brandManager || "—"}</span></div>
                 <div style={S.cellF} onClick={() => openDetail(r)}><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.content}</span></div>
                 <div style={S.cell(55)}><select value={r.status} onChange={(e) => updateStatus(r.id, e.target.value)} onClick={(e) => e.stopPropagation()} style={{ border: "none", background: "transparent", fontSize: 11, fontWeight: 600, color: STATUS_COLORS[r.status], cursor: "pointer", outline: "none", width: "100%" }}>{STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}</select></div>
                 <div style={{ ...S.cellF, maxWidth: 150 }} onClick={() => openDetail(r)}><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 11, color: "#666" }}>{r.nextStep || "—"}</span></div>
