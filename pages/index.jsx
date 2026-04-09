@@ -21,7 +21,7 @@ const DEFAULT_RECORDS = [
   { id: 7, requestDate: "2025.11.01", dueDate: "2025.11.30", completeDate: "2025.11.15", brand: "G", brandManager: "Sarah L.", woojooManager: "최현아", content: "스와치 리뷰 — 2종 긍정, 추가 색상 옵션 요청", status: "완료", nextStep: "색상 개발 착수", pendingReason: "—", memos: [] },
 ];
 
-const EMPTY = { requestDate: "", dueDate: "", completeDate: "", brand: "", brandManager: "", woojooManager: "", content: "", status: "펜딩", nextStep: "", pendingReason: "", memos: [], updatedAt: "" };
+const EMPTY = { requestDate: "", dueDate: "", completeDate: "", brand: "", brandManager: "", woojooManager: "", content: "", status: "펜딩", nextStep: "", pendingReason: "", memos: [], updatedAt: "", updatedBy: "" };
 
 // ─── Login / Signup Gate ─────────────────────────────────────────────────────
 function AuthGate({ onLogin }) {
@@ -232,14 +232,14 @@ function BuyerApp({ currentUser, onLogout }) {
 
   const handleAdd = () => {
     const mx = records.reduce((m, r) => Math.max(m, r.id), 0);
-    const newRecord = { ...form, id: mx+1, memos: [], updatedAt: now() };
+    const newRecord = { ...form, id: mx+1, memos: [], updatedAt: now(), updatedBy: currentUser.name };
     setRecords((p) => [...p, newRecord]);
     writeLog("기록 추가", `${form.brand} (${form.woojooManager})`);
     setModal(null); setForm({ ...EMPTY }); showToast("✓ 기록 추가됨");
   };
   const startEdit = (r) => { setEditingId(r.id); setForm({ ...r }); setModal("edit"); };
   const handleEdit = () => {
-    const u = { ...form, id: editingId, updatedAt: now() };
+    const u = { ...form, id: editingId, updatedAt: now(), updatedBy: currentUser.name };
     setRecords((p) => p.map((r) => r.id === editingId ? u : r));
     if (detail && detail.id === editingId) setDetail(u);
     writeLog("기록 수정", `${form.brand} (${form.woojooManager})`);
@@ -449,7 +449,7 @@ function BuyerApp({ currentUser, onLogout }) {
       {/* Table */}
       <div style={{ overflowX: "auto" }}>
         <div style={{ display: "flex", background: "#2C3E50", color: "#fff", fontWeight: 600, fontSize: 11, borderRadius: "12px 12px 0 0", minWidth: 900 }}>
-          <div style={S.hCell(36)}>No</div><div style={S.hCell(70)}>담당자</div><div style={S.hCell(78)}>의뢰일</div><div style={S.hCell(78)}>납기일</div><div style={S.hCell(78)}>완료일</div><div style={S.hCell(100)}>브랜드</div><div style={S.hCell(80)}>브랜드담당</div><div style={S.hCellF}>진행 내용</div><div style={S.hCell(55)}>상태</div><div style={{ ...S.hCellF, maxWidth: 150 }}>다음 단계</div><div style={S.hCell(110)}>최종수정</div><div style={S.hCell(70)}>관리</div>
+          <div style={S.hCell(36)}>No</div><div style={S.hCell(70)}>담당자</div><div style={S.hCell(78)}>의뢰일</div><div style={S.hCell(78)}>납기일</div><div style={S.hCell(78)}>완료일</div><div style={S.hCell(100)}>브랜드</div><div style={S.hCell(80)}>브랜드담당</div><div style={S.hCellF}>진행 내용</div><div style={S.hCell(55)}>상태</div><div style={{ ...S.hCellF, maxWidth: 150 }}>다음 단계</div><div style={S.hCell(100)}>최종수정</div><div style={S.hCell(70)}>수정자</div><div style={S.hCell(70)}>관리</div>
         </div>
         {filtered.length === 0 ? (<div style={{ background: "#fff", borderRadius: "0 0 12px 12px", border: "1px solid #e8e8e4", textAlign: "center", padding: 40, color: "#999" }}>검색 결과가 없습니다</div>) : (
           <div style={{ background: "#fff", borderRadius: "0 0 12px 12px", border: "1px solid #e8e8e4", overflow: "hidden", minWidth: 900 }}>
@@ -465,7 +465,8 @@ function BuyerApp({ currentUser, onLogout }) {
                 <div style={S.cellF} onClick={() => openDetail(r)}><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.content}</span></div>
                 <div style={S.cell(55)}><select value={r.status} onChange={(e) => updateStatus(r.id, e.target.value)} onClick={(e) => e.stopPropagation()} style={{ border: "none", background: "transparent", fontSize: 11, fontWeight: 600, color: STATUS_COLORS[r.status], cursor: "pointer", outline: "none", width: "100%" }}>{STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}</select></div>
                 <div style={{ ...S.cellF, maxWidth: 150 }} onClick={() => openDetail(r)}><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 11, color: "#666" }}>{r.nextStep || "—"}</span></div>
-                <div style={S.cell(110)} onClick={() => openDetail(r)}><span style={{ fontSize:10, color:"#aaa" }}>{r.updatedAt || "—"}</span></div>
+                <div style={S.cell(100)} onClick={() => openDetail(r)}><span style={{ fontSize:10, color:"#aaa" }}>{r.updatedAt || "—"}</span></div>
+                <div style={S.cell(70)} onClick={() => openDetail(r)}><span style={{ fontSize:11, color:"#2C3E50", fontWeight:600 }}>{r.updatedBy || "—"}</span></div>
                 <div style={S.cell(70)}>
                   <button style={{ ...S.ib, position: "relative" }} onClick={(e) => { e.stopPropagation(); openDetail(r, "memo"); }}>📝{r.memos.length > 0 && <span style={{ position: "absolute", top: -4, right: -6, background: "#EF4444", color: "#fff", borderRadius: 10, padding: "0 4px", fontSize: 9, fontWeight: 700, minWidth: 14, textAlign: "center" }}>{r.memos.length}</span>}</button>
                   <button style={S.ib} onClick={(e) => { e.stopPropagation(); startEdit(r); }}>✏️</button>
