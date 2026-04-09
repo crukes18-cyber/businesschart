@@ -2,13 +2,9 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 
-// ─── 비밀번호 설정 ────────────────────────────────────────────────────────────
-const APP_PASSWORD = "woojoo2026";
-// ─────────────────────────────────────────────────────────────────────────────
-
-const STATUS_COLORS = { "완료": "#1D9E75", "대기": "#F59E0B", "진행": "#378ADD", "취소": "#EF4444" };
-const STATUS_BG = { "완료": "#EAF3DE", "대기": "#FEF3C7", "진행": "#E6F1FB", "취소": "#FDEDEC" };
-const STATUSES = ["완료", "대기", "진행", "취소"];
+const STATUS_COLORS = { "완료": "#1D9E75", "펜딩": "#F59E0B", "진행": "#378ADD", "취소": "#EF4444" };
+const STATUS_BG = { "완료": "#EAF3DE", "펜딩": "#FEF3C7", "진행": "#E6F1FB", "취소": "#FDEDEC" };
+const STATUSES = ["완료", "펜딩", "진행", "취소"];
 const now = () => { const d = new Date(); return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; };
 
 // 날짜 변환 헬퍼 (표시용: 2026.04.08 ↔ input용: 2026-04-08)
@@ -19,55 +15,107 @@ const DEFAULT_RECORDS = [
   { id: 1, requestDate: "2025.07.28", dueDate: "2025.08.15", completeDate: "2025.08.10", brand: "Alpha Sports", brandManager: "James K.", woojooManager: "김은석", content: "첫 접촉 — 유럽 친환경 인증 소재 관심 확인", status: "완료", nextStep: "인증서 및 소재 사양서 발송", pendingReason: "—", memos: [{ id: 1, text: "유럽 OEKO-TEX 인증 관련 문의 — 인증서 사본 첨부 완료", date: "2025.08.12 09:30" }] },
   { id: 2, requestDate: "2025.09.01", dueDate: "2025.09.20", completeDate: "2025.09.15", brand: "B", brandManager: "", woojooManager: "이지은", content: "첫 미팅 — 소재 라인업 소개, SS26 니즈 청취", status: "완료", nextStep: "스와치 발송 요청", pendingReason: "—", memos: [] },
   { id: 3, requestDate: "2025.09.10", dueDate: "2025.09.25", completeDate: "2025.09.20", brand: "C", brandManager: "James K.", woojooManager: "김은석", content: "소재 승인 완료 — SS26 500yds 발주 확정", status: "완료", nextStep: "발주서 접수 및 생산 일정 공유", pendingReason: "—", memos: [] },
-  { id: 4, requestDate: "2025.09.30", dueDate: "2025.10.15", completeDate: "2025.10.08", brand: "D", brandManager: "", woojooManager: "박성민", content: "스와치 전달, DNT-4034 foil print 타당성 논의", status: "대기", nextStep: "가먼트 워시 샘플 제작 착수", pendingReason: "워시 테스트 결과 대기", memos: [{ id: 1, text: "가먼트 워시 테스트 3회 진행 예정, 결과 2주 후 공유", date: "2025.10.10 14:20" }, { id: 2, text: "1차 워시 테스트 완료 — 수축률 2.1%, 기준 이내\n2차 테스트 다음 주 진행", date: "2025.10.18 11:00" }] },
+  { id: 4, requestDate: "2025.09.30", dueDate: "2025.10.15", completeDate: "2025.10.08", brand: "D", brandManager: "", woojooManager: "박성민", content: "스와치 전달, DNT-4034 foil print 타당성 논의", status: "펜딩", nextStep: "가먼트 워시 샘플 제작 착수", pendingReason: "워시 테스트 결과 대기", memos: [{ id: 1, text: "가먼트 워시 테스트 3회 진행 예정, 결과 2주 후 공유", date: "2025.10.10 14:20" }, { id: 2, text: "1차 워시 테스트 완료 — 수축률 2.1%, 기준 이내\n2차 테스트 다음 주 진행", date: "2025.10.18 11:00" }] },
   { id: 5, requestDate: "2025.10.10", dueDate: "2025.11.01", completeDate: "2025.10.20", brand: "E", brandManager: "Sarah L.", woojooManager: "최현아", content: "첫 미팅 — FW26 소재 니즈 파악, Woven-touch 관심 확인", status: "진행", nextStep: "스와치 3종 선별 발송", pendingReason: "—", memos: [] },
-  { id: 6, requestDate: "2025.10.25", dueDate: "2025.11.20", completeDate: "2025.11.05", brand: "F", brandManager: "", woojooManager: "김은석", content: "인트로 미팅 — 친환경 소재 관심, 워터리스 다잉 소개", status: "대기", nextStep: "소재 카탈로그 발송", pendingReason: "—", memos: [] },
+  { id: 6, requestDate: "2025.10.25", dueDate: "2025.11.20", completeDate: "2025.11.05", brand: "F", brandManager: "", woojooManager: "김은석", content: "인트로 미팅 — 친환경 소재 관심, 워터리스 다잉 소개", status: "펜딩", nextStep: "소재 카탈로그 발송", pendingReason: "—", memos: [] },
   { id: 7, requestDate: "2025.11.01", dueDate: "2025.11.30", completeDate: "2025.11.15", brand: "G", brandManager: "Sarah L.", woojooManager: "최현아", content: "스와치 리뷰 — 2종 긍정, 추가 색상 옵션 요청", status: "완료", nextStep: "색상 개발 착수", pendingReason: "—", memos: [] },
 ];
 
-const EMPTY = { requestDate: "", dueDate: "", completeDate: "", brand: "", brandManager: "", woojooManager: "", content: "", status: "대기", nextStep: "", pendingReason: "", memos: [] };
+const EMPTY = { requestDate: "", dueDate: "", completeDate: "", brand: "", brandManager: "", woojooManager: "", content: "", status: "펜딩", nextStep: "", pendingReason: "", memos: [], updatedAt: "" };
 
-// ─── Password Gate ────────────────────────────────────────────────────────────
-function PasswordGate({ onUnlock }) {
-  const [pw, setPw] = useState("");
-  const [error, setError] = useState(false);
+// ─── Login / Signup Gate ─────────────────────────────────────────────────────
+function AuthGate({ onLogin }) {
+  const [mode, setMode] = useState("login");
+  const [userId, setUserId] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
   const [shake, setShake] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const attempt = () => {
-    if (pw === APP_PASSWORD) {
-      if (typeof window !== "undefined") sessionStorage.setItem("buyer_auth", "1");
-      onUnlock();
-    } else {
-      setError(true); setShake(true); setPw("");
-      setTimeout(() => setShake(false), 500);
-    }
+  const triggerShake = (msg) => { setError(msg); setShake(true); setTimeout(()=>setShake(false),500); };
+
+  const handleLogin = async () => {
+    if (!userId.trim()||!password.trim()) return triggerShake("아이디와 비밀번호를 입력해주세요.");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/users");
+      const data = await res.json();
+      const user = (data.users||[]).find(u=>u.userId===userId && u.password===password);
+      if (!user) { setLoading(false); return triggerShake("아이디 또는 비밀번호가 올바르지 않아요."); }
+      if (typeof window !== "undefined") sessionStorage.setItem("buyer_user", JSON.stringify({ userId: user.userId, name: user.name }));
+      onLogin({ userId: user.userId, name: user.name });
+    } catch { triggerShake("서버 오류가 발생했어요."); }
+    setLoading(false);
   };
+
+  const handleSignup = async () => {
+    if (!userId.trim()||!password.trim()||!name.trim()) return triggerShake("모든 항목을 입력해주세요.");
+    if (userId.length < 3) return triggerShake("아이디는 3자 이상이어야 해요.");
+    if (password.length < 4) return triggerShake("비밀번호는 4자 이상이어야 해요.");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, name, password })
+      });
+      const data = await res.json();
+      if (res.status === 409) { setLoading(false); return triggerShake(data.error); }
+      if (!data.ok) { setLoading(false); return triggerShake("가입 중 오류가 발생했어요."); }
+      if (typeof window !== "undefined") sessionStorage.setItem("buyer_user", JSON.stringify({ userId, name }));
+      onLogin({ userId, name });
+    } catch { triggerShake("서버 오류가 발생했어요."); }
+    setLoading(false);
+  };
+
+  const inp = { width:"100%", boxSizing:"border-box", padding:"11px 14px", border:"1.5px solid #ddd", borderRadius:10, fontSize:14, outline:"none", fontFamily:"inherit" };
 
   return (
     <div style={{ minHeight:"100vh", background:"#f8f8f6", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
       <style>{`@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}`}</style>
-      <div style={{ background:"white", borderRadius:16, padding:"40px 36px", boxShadow:"0 8px 40px rgba(0,0,0,0.10)", width:340, animation:shake?"shake 0.4s ease":"none" }}>
-        <div style={{ textAlign:"center", marginBottom:28 }}>
+      <div style={{ background:"white", borderRadius:16, padding:"40px 36px", boxShadow:"0 8px 40px rgba(0,0,0,0.10)", width:360, animation:shake?"shake 0.4s ease":"none" }}>
+        <div style={{ textAlign:"center", marginBottom:24 }}>
           <div style={{ width:52,height:52,borderRadius:14,background:"#2C3E50",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 14px",boxShadow:"0 4px 14px rgba(44,62,80,0.3)" }}>
             <span style={{ fontSize:24 }}>📋</span>
           </div>
           <div style={{ fontSize:18,fontWeight:700,color:"#1a1a1a" }}>바이어 기록 카드</div>
           <div style={{ fontSize:12,color:"#999",marginTop:4 }}>우주글로벌 내부 전용</div>
         </div>
-        <label style={{ fontSize:12,fontWeight:600,color:"#555",display:"block",marginBottom:6 }}>비밀번호</label>
-        <input
-          type="password" value={pw} autoFocus
-          onChange={e=>{ setPw(e.target.value); setError(false); }}
-          onKeyDown={e=>e.key==="Enter" && attempt()}
-          placeholder="비밀번호를 입력하세요"
-          style={{ width:"100%",boxSizing:"border-box",padding:"11px 14px",border:error?"1.5px solid #EF4444":"1.5px solid #ddd",borderRadius:10,fontSize:14,outline:"none",fontFamily:"inherit",background:error?"#FFF8F8":"white" }}
-        />
-        {error && <div style={{ fontSize:12,color:"#EF4444",marginTop:5 }}>⚠ 비밀번호가 올바르지 않습니다</div>}
-        <button onClick={attempt} style={{ width:"100%",padding:"12px",marginTop:16,background:"#2C3E50",color:"white",border:"none",borderRadius:10,fontSize:14,fontWeight:700,cursor:"pointer" }}>
-          입장하기
+        <div style={{ display:"flex", background:"#f5f5f3", borderRadius:10, padding:4, marginBottom:20, gap:4 }}>
+          {[["login","로그인"],["signup","회원가입"]].map(([m,label])=>(
+            <button key={m} onClick={()=>{setMode(m);setError("");}} style={{ flex:1,padding:"8px",borderRadius:8,border:"none",cursor:"pointer",fontSize:13,fontWeight:600,
+              background:mode===m?"white":"transparent",color:mode===m?"#1a1a1a":"#999",
+              boxShadow:mode===m?"0 1px 4px rgba(0,0,0,0.1)":"none",transition:"all .15s" }}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+          {mode==="signup" && (
+            <div>
+              <label style={{ fontSize:12,fontWeight:600,color:"#555",display:"block",marginBottom:5 }}>이름</label>
+              <input value={name} onChange={e=>{setName(e.target.value);setError("");}} placeholder="홍길동" style={inp}/>
+            </div>
+          )}
+          <div>
+            <label style={{ fontSize:12,fontWeight:600,color:"#555",display:"block",marginBottom:5 }}>아이디</label>
+            <input value={userId} onChange={e=>{setUserId(e.target.value);setError("");}} placeholder="아이디 입력" style={inp} autoFocus/>
+          </div>
+          <div>
+            <label style={{ fontSize:12,fontWeight:600,color:"#555",display:"block",marginBottom:5 }}>비밀번호</label>
+            <input type="password" value={password} onChange={e=>{setPassword(e.target.value);setError("");}}
+              onKeyDown={e=>e.key==="Enter"&&(mode==="login"?handleLogin():handleSignup())}
+              placeholder="비밀번호 입력" style={inp}/>
+          </div>
+        </div>
+        {error && <div style={{ fontSize:12,color:"#EF4444",marginTop:10,padding:"8px 12px",background:"#FEF2F2",borderRadius:8 }}>⚠ {error}</div>}
+        <button onClick={mode==="login"?handleLogin:handleSignup} disabled={loading}
+          style={{ width:"100%",padding:"12px",marginTop:16,background:"#2C3E50",color:"white",border:"none",borderRadius:10,fontSize:14,fontWeight:700,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1 }}>
+          {loading?"처리 중...":(mode==="login"?"로그인":"가입하기")}
         </button>
-        <div style={{ marginTop:16,padding:"10px 12px",background:"#F8FAFC",borderRadius:8,fontSize:11,color:"#94A3B8",textAlign:"center",lineHeight:1.6 }}>
-          이 페이지는 우주글로벌 내부 인원만<br/>접근할 수 있습니다
+        <div style={{ marginTop:14,padding:"10px 12px",background:"#F8FAFC",borderRadius:8,fontSize:11,color:"#94A3B8",textAlign:"center",lineHeight:1.6 }}>
+          이 페이지는 우주글로벌 내부 인원만 접근할 수 있습니다
         </div>
       </div>
     </div>
@@ -76,13 +124,17 @@ function PasswordGate({ onUnlock }) {
 
 // ─── Main Export ──────────────────────────────────────────────────────────────
 export default function BuyerCard() {
-  const [authed, setAuthed] = useState(() => typeof window !== "undefined" && sessionStorage.getItem("buyer_auth") === "1");
-  if (!authed) return <PasswordGate onUnlock={()=>setAuthed(true)} />;
-  return <BuyerApp />;
+  const [currentUser, setCurrentUser] = useState(() => {
+    if (typeof window === "undefined") return null;
+    const s = sessionStorage.getItem("buyer_user");
+    return s ? JSON.parse(s) : null;
+  });
+  if (!currentUser) return <AuthGate onLogin={(user)=>setCurrentUser(user)} />;
+  return <BuyerApp currentUser={currentUser} onLogout={()=>{ sessionStorage.removeItem("buyer_user"); setCurrentUser(null); }} />;
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
-function BuyerApp() {
+function BuyerApp({ currentUser, onLogout }) {
   const [records, setRecords] = useState(DEFAULT_RECORDS);
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({ ...EMPTY });
@@ -94,8 +146,23 @@ function BuyerApp() {
   const [filterStatus, setFilterStatus] = useState("전체");
   const [filterManager, setFilterManager] = useState("전체");
   const [memoText, setMemoText] = useState("");
-  const [syncStatus, setSyncStatus] = useState("idle"); // idle | loading | saving | saved | error
+  const [syncStatus, setSyncStatus] = useState("idle");
   const [lastSaved, setLastSaved] = useState(null);
+  const [showLogs, setShowLogs] = useState(false);
+  const [logs, setLogs] = useState([]);
+
+  useEffect(() => {
+    if (!showLogs) return;
+    fetch("/api/logs").then(r=>r.json()).then(d=>setLogs(d.logs||[])).catch(()=>{});
+  }, [showLogs]);
+
+  const writeLog = (action, target) => {
+    fetch("/api/logs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: currentUser.userId, userName: currentUser.name, action, target })
+    }).catch(()=>{});
+  };
   const [confirmDelete, setConfirmDelete] = useState(null); // { id, name }
   const [undoStack, setUndoStack] = useState([]);
   const [undoNotice, setUndoNotice] = useState(null);
@@ -161,11 +228,23 @@ function BuyerApp() {
     if (search) { const q = search.toLowerCase(); return [r.brand, r.brandManager, r.content, r.nextStep, r.woojooManager].some((v) => (v||"").toLowerCase().includes(q)); }
     return true;
   }), [records, filterStatus, filterManager, search]);
-  const stats = useMemo(() => ({ total: records.length, done: records.filter((r) => r.status === "완료").length, waiting: records.filter((r) => r.status === "대기").length, progress: records.filter((r) => r.status === "진행").length }), [records]);
+  const stats = useMemo(() => ({ total: records.length, done: records.filter((r) => r.status === "완료").length, waiting: records.filter((r) => r.status === "펜딩").length, progress: records.filter((r) => r.status === "진행").length }), [records]);
 
-  const handleAdd = () => { const mx = records.reduce((m, r) => Math.max(m, r.id), 0); setRecords((p) => [...p, { ...form, id: mx+1, memos: [] }]); setModal(null); setForm({ ...EMPTY }); showToast("✓ 기록 추가됨"); };
+  const handleAdd = () => {
+    const mx = records.reduce((m, r) => Math.max(m, r.id), 0);
+    const newRecord = { ...form, id: mx+1, memos: [], updatedAt: now() };
+    setRecords((p) => [...p, newRecord]);
+    writeLog("기록 추가", `${form.brand} (${form.woojooManager})`);
+    setModal(null); setForm({ ...EMPTY }); showToast("✓ 기록 추가됨");
+  };
   const startEdit = (r) => { setEditingId(r.id); setForm({ ...r }); setModal("edit"); };
-  const handleEdit = () => { const u = { ...form, id: editingId }; setRecords((p) => p.map((r) => r.id === editingId ? u : r)); if (detail && detail.id === editingId) setDetail(u); setModal(null); setEditingId(null); setForm({ ...EMPTY }); showToast("✓ 수정됨"); };
+  const handleEdit = () => {
+    const u = { ...form, id: editingId, updatedAt: now() };
+    setRecords((p) => p.map((r) => r.id === editingId ? u : r));
+    if (detail && detail.id === editingId) setDetail(u);
+    writeLog("기록 수정", `${form.brand} (${form.woojooManager})`);
+    setModal(null); setEditingId(null); setForm({ ...EMPTY }); showToast("✓ 수정됨");
+  };
 
   const requestDelete = (id) => {
     const rec = records.find(r => r.id === id);
@@ -179,6 +258,7 @@ function BuyerApp() {
     const snapshot = records;
     const rec = records.find(r => r.id === confirmDelete.id);
     setRecords(p => p.filter(r => r.id !== confirmDelete.id));
+    writeLog("기록 삭제", `${rec?.brand} (${rec?.woojooManager})`);
     setConfirmDelete(null);
     showToast("✓ 삭제됨");
     const tid = setTimeout(() => setUndoNotice(null), 5000);
@@ -317,7 +397,18 @@ function BuyerApp() {
             {lastSaved && <span style={{ marginLeft: 8, color: "#bbb" }}>· 마지막 저장: {lastSaved}</span>}
           </p>
         </div>
-        {/* 저장 버튼 */}
+        {/* 유저 + 버튼 */}
+        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          <span style={{ fontSize:12, color:"#999", fontWeight:600 }}>👤 {currentUser.name} ({currentUser.userId})</span>
+          <button onClick={()=>setShowLogs(true)}
+            style={{ padding:"8px 12px",borderRadius:8,border:"1px solid #ddd",cursor:"pointer",fontSize:12,fontWeight:600,background:"white",color:"#555" }}>
+            📋 변경 이력
+          </button>
+          <button onClick={onLogout}
+            style={{ padding:"8px 12px",borderRadius:8,border:"1px solid #fcc",cursor:"pointer",fontSize:12,fontWeight:600,background:"white",color:"#EF4444" }}>
+            로그아웃
+          </button>
+        </div>
         <div style={{ display:"flex", gap:4 }}>
           <button onClick={handleExcelDownload}
             style={{ padding:"8px 16px", borderRadius:"8px 0 0 8px", border:"none", cursor:"pointer",
@@ -342,7 +433,7 @@ function BuyerApp() {
 
       {/* Stats */}
       <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-        {[{ l: "전체", v: stats.total, c: "#2C3E50" }, { l: "완료", v: stats.done, c: "#1D9E75" }, { l: "대기", v: stats.waiting, c: "#F59E0B" }, { l: "진행", v: stats.progress, c: "#378ADD" }].map(({ l, v, c }) => (
+        {[{ l: "전체", v: stats.total, c: "#2C3E50" }, { l: "완료", v: stats.done, c: "#1D9E75" }, { l: "펜딩", v: stats.waiting, c: "#F59E0B" }, { l: "진행", v: stats.progress, c: "#378ADD" }].map(({ l, v, c }) => (
           <div key={l} style={{ textAlign: "center", padding: "12px 8px", background: "#fff", border: "1px solid #e8e8e4", borderRadius: 10, flex: 1 }}><div style={{ fontSize: 24, fontWeight: 700, color: c }}>{v}</div><div style={{ fontSize: 11, color: "#888" }}>{l}</div></div>
         ))}
       </div>
@@ -358,7 +449,7 @@ function BuyerApp() {
       {/* Table */}
       <div style={{ overflowX: "auto" }}>
         <div style={{ display: "flex", background: "#2C3E50", color: "#fff", fontWeight: 600, fontSize: 11, borderRadius: "12px 12px 0 0", minWidth: 900 }}>
-          <div style={S.hCell(36)}>No</div><div style={S.hCell(70)}>담당자</div><div style={S.hCell(78)}>의뢰일</div><div style={S.hCell(78)}>납기일</div><div style={S.hCell(78)}>완료일</div><div style={S.hCell(100)}>브랜드</div><div style={S.hCell(80)}>브랜드담당</div><div style={S.hCellF}>진행 내용</div><div style={S.hCell(55)}>상태</div><div style={{ ...S.hCellF, maxWidth: 150 }}>다음 단계</div><div style={S.hCell(70)}>관리</div>
+          <div style={S.hCell(36)}>No</div><div style={S.hCell(70)}>담당자</div><div style={S.hCell(78)}>의뢰일</div><div style={S.hCell(78)}>납기일</div><div style={S.hCell(78)}>완료일</div><div style={S.hCell(100)}>브랜드</div><div style={S.hCell(80)}>브랜드담당</div><div style={S.hCellF}>진행 내용</div><div style={S.hCell(55)}>상태</div><div style={{ ...S.hCellF, maxWidth: 150 }}>다음 단계</div><div style={S.hCell(110)}>최종수정</div><div style={S.hCell(70)}>관리</div>
         </div>
         {filtered.length === 0 ? (<div style={{ background: "#fff", borderRadius: "0 0 12px 12px", border: "1px solid #e8e8e4", textAlign: "center", padding: 40, color: "#999" }}>검색 결과가 없습니다</div>) : (
           <div style={{ background: "#fff", borderRadius: "0 0 12px 12px", border: "1px solid #e8e8e4", overflow: "hidden", minWidth: 900 }}>
@@ -374,6 +465,7 @@ function BuyerApp() {
                 <div style={S.cellF} onClick={() => openDetail(r)}><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.content}</span></div>
                 <div style={S.cell(55)}><select value={r.status} onChange={(e) => updateStatus(r.id, e.target.value)} onClick={(e) => e.stopPropagation()} style={{ border: "none", background: "transparent", fontSize: 11, fontWeight: 600, color: STATUS_COLORS[r.status], cursor: "pointer", outline: "none", width: "100%" }}>{STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}</select></div>
                 <div style={{ ...S.cellF, maxWidth: 150 }} onClick={() => openDetail(r)}><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 11, color: "#666" }}>{r.nextStep || "—"}</span></div>
+                <div style={S.cell(110)} onClick={() => openDetail(r)}><span style={{ fontSize:10, color:"#aaa" }}>{r.updatedAt || "—"}</span></div>
                 <div style={S.cell(70)}>
                   <button style={{ ...S.ib, position: "relative" }} onClick={(e) => { e.stopPropagation(); openDetail(r, "memo"); }}>📝{r.memos.length > 0 && <span style={{ position: "absolute", top: -4, right: -6, background: "#EF4444", color: "#fff", borderRadius: 10, padding: "0 4px", fontSize: 9, fontWeight: 700, minWidth: 14, textAlign: "center" }}>{r.memos.length}</span>}</button>
                   <button style={S.ib} onClick={(e) => { e.stopPropagation(); startEdit(r); }}>✏️</button>
@@ -421,6 +513,48 @@ function BuyerApp() {
       )}
 
       {/* 일반 토스트 */}
+      {/* 변경 이력 모달 */}
+      {showLogs && (
+        <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",zIndex:2000,display:"flex",alignItems:"center",justifyContent:"center" }}>
+          <div style={{ background:"white",borderRadius:16,width:600,maxHeight:"80vh",display:"flex",flexDirection:"column",boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}>
+            <div style={{ padding:"20px 24px",borderBottom:"1px solid #e8e8e4",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0 }}>
+              <div>
+                <div style={{ fontSize:16,fontWeight:700,color:"#1a1a1a" }}>📋 변경 이력</div>
+                <div style={{ fontSize:12,color:"#999",marginTop:2 }}>최근 100건</div>
+              </div>
+              <button onClick={()=>setShowLogs(false)} style={{ background:"none",border:"none",cursor:"pointer",fontSize:18,color:"#999" }}>✕</button>
+            </div>
+            <div style={{ flex:1,overflowY:"auto",padding:"16px 24px" }}>
+              {logs.length===0 ? (
+                <div style={{ textAlign:"center",color:"#bbb",padding:"40px 0" }}>
+                  <div style={{ fontSize:28,marginBottom:8 }}>📭</div>
+                  <div>아직 변경 이력이 없어요</div>
+                </div>
+              ) : logs.map((log,i) => (
+                <div key={i} style={{ display:"flex",gap:12,padding:"10px 0",borderBottom:"1px solid #f5f5f0",alignItems:"flex-start" }}>
+                  <div style={{ width:8,height:8,borderRadius:"50%",background:"#2C3E50",marginTop:6,flexShrink:0 }}/>
+                  <div style={{ flex:1,minWidth:0 }}>
+                    <div style={{ display:"flex",gap:8,alignItems:"center",flexWrap:"wrap" }}>
+                      <span style={{ fontSize:12,fontWeight:700,color:"#1a1a1a" }}>{log.userName}</span>
+                      <span style={{ fontSize:11,color:"#aaa" }}>({log.userId})</span>
+                      <span style={{ padding:"2px 8px",borderRadius:6,background:"#f0f4f8",color:"#2C3E50",fontSize:11,fontWeight:600 }}>{log.action}</span>
+                    </div>
+                    <div style={{ fontSize:12,color:"#666",marginTop:2 }}>{log.target}</div>
+                    <div style={{ fontSize:11,color:"#ccc",marginTop:2 }}>{log.timestamp}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ padding:"14px 24px",borderTop:"1px solid #e8e8e4",flexShrink:0 }}>
+              <button onClick={()=>{ fetch("/api/logs").then(r=>r.json()).then(d=>setLogs(d.logs||[])); }}
+                style={{ padding:"8px 16px",borderRadius:8,border:"1px solid #ddd",background:"white",cursor:"pointer",fontSize:13,color:"#666" }}>
+                🔄 새로고침
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {toast && (<div style={{ position: "fixed", bottom: 24, right: 24, background: "#fff", border: "1px solid #e0e0e0", borderRadius: 10, padding: "10px 18px", fontSize: 13, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", zIndex: 9999 }}>{toast}</div>)}
     </div>
   );
