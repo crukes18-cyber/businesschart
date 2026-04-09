@@ -318,23 +318,26 @@ function BuyerApp() {
           </p>
         </div>
         {/* 저장 버튼 */}
-        <button onClick={handleExcelDownload}
-          style={{ padding:"8px 18px", borderRadius:8, border:"none", cursor:"pointer",
-            fontSize:13, fontWeight:600, display:"flex", alignItems:"center", gap:6,
-            background:"#16A34A", color:"white" }}>
-          <span>⬇️</span> 엑셀 저장
-        </button>
-        <button onClick={handleSave} disabled={syncStatus==="saving"||syncStatus==="loading"}
+        <div style={{ display:"flex", gap:4 }}>
+          <button onClick={handleExcelDownload}
+            style={{ padding:"8px 16px", borderRadius:"8px 0 0 8px", border:"none", cursor:"pointer",
+              fontSize:13, fontWeight:600, display:"flex", alignItems:"center", gap:6,
+              background:"#16A34A", color:"white" }}>
+            <span>⬇️</span> 엑셀 저장
+          </button>
+          <button onClick={handleSave} disabled={syncStatus==="saving"||syncStatus==="loading"}
           style={{ padding:"8px 18px", borderRadius:8, border:"none", cursor: syncStatus==="saving"?"not-allowed":"pointer",
             fontSize:13, fontWeight:600, display:"flex", alignItems:"center", gap:6,
             background: syncStatus==="saved"?"#1D9E75": syncStatus==="error"?"#EF4444":"#2C3E50",
-            color:"white", opacity: syncStatus==="saving"?0.7:1, transition:"background .3s" }}>
-          {syncStatus==="loading" && <><span>⏳</span> 불러오는중</>}
-          {syncStatus==="saving"  && <><span>⏳</span> 저장중...</>}
-          {syncStatus==="saved"   && <><span>✅</span> 저장됨</>}
-          {syncStatus==="error"   && <><span>❌</span> 오류</>}
-          {syncStatus==="idle"    && <><span>☁️</span> 저장</>}
-        </button>
+            color:"white", opacity: syncStatus==="saving"?0.7:1, transition:"background .3s",
+              borderRadius:"0 8px 8px 0" }}>
+            {syncStatus==="loading" && <><span>⏳</span> 불러오는중</>}
+            {syncStatus==="saving"  && <><span>⏳</span> 저장중...</>}
+            {syncStatus==="saved"   && <><span>✅</span> 저장됨</>}
+            {syncStatus==="error"   && <><span>❌</span> 오류</>}
+            {syncStatus==="idle"    && <><span>☁️</span> 저장</>}
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
