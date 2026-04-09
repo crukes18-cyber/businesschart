@@ -431,17 +431,37 @@ function BuyerApp({ currentUser, onLogout }) {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats — 클릭 시 필터 적용 */}
       <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-        {[{ l: "전체", v: stats.total, c: "#2C3E50" }, { l: "완료", v: stats.done, c: "#1D9E75" }, { l: "펜딩", v: stats.waiting, c: "#F59E0B" }, { l: "진행", v: stats.progress, c: "#378ADD" }].map(({ l, v, c }) => (
-          <div key={l} style={{ textAlign: "center", padding: "12px 8px", background: "#fff", border: "1px solid #e8e8e4", borderRadius: 10, flex: 1 }}><div style={{ fontSize: 24, fontWeight: 700, color: c }}>{v}</div><div style={{ fontSize: 11, color: "#888" }}>{l}</div></div>
-        ))}
+        {[
+          { l: "전체",  v: stats.total,    c: "#2C3E50", key: "전체",  bg: "#EEF2F7", border: "#2C3E50" },
+          { l: "진행",  v: stats.progress, c: "#378ADD", key: "진행",  bg: "#E6F1FB", border: "#378ADD" },
+          { l: "펜딩",  v: stats.waiting,  c: "#F59E0B", key: "펜딩",  bg: "#FEF3C7", border: "#F59E0B" },
+          { l: "완료",  v: stats.done,     c: "#1D9E75", key: "완료",  bg: "#EAF3DE", border: "#1D9E75" },
+        ].map(({ l, v, c, key, bg, border }) => {
+          const isActive = filterStatus === key || (key === "전체" && filterStatus === "전체");
+          return (
+            <button key={l}
+              onClick={() => setFilterStatus(isActive && key !== "전체" ? "전체" : key)}
+              style={{ textAlign: "center", padding: "14px 8px", background: isActive ? bg : "#fff",
+                border: `2px solid ${isActive ? border : "#e8e8e4"}`,
+                borderRadius: 10, flex: 1, cursor: "pointer",
+                boxShadow: isActive ? `0 0 0 3px ${border}22` : "none",
+                transition: "all .15s" }}>
+              <div style={{ fontSize: 24, fontWeight: 700, color: c }}>{v}</div>
+              <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>{l}</div>
+              {isActive && key !== "전체" && (
+                <div style={{ marginTop: 5, fontSize: 10, color: c, fontWeight: 600 }}>필터 적용중</div>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Filters */}
       <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 16 }}>
         <input style={{ flex: 1, minWidth: 180, padding: "8px 12px", borderRadius: 8, border: "1px solid #e0e0dc", fontSize: 12, background: "#fff", outline: "none" }} placeholder="🔍 검색..." value={search} onChange={(e) => setSearch(e.target.value)} />
-        <select style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid #e0e0dc", fontSize: 12, background: "#fff" }} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}><option value="전체">상태: 전체</option>{STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}</select>
+        
         <select style={{ padding: "7px 10px", borderRadius: 8, border: "1px solid #e0e0dc", fontSize: 12, background: "#fff" }} value={filterManager} onChange={(e) => setFilterManager(e.target.value)}>{managers.map((m) => <option key={m} value={m}>{m === "전체" ? "담당자: 전체" : m}</option>)}</select>
         <button style={S.btn("primary")} onClick={() => { setForm({ ...EMPTY }); setModal("add"); }}>+ 새 기록</button>
       </div>
