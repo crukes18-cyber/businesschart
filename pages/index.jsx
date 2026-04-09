@@ -163,6 +163,66 @@ function BuyerApp({ currentUser, onLogout }) {
       body: JSON.stringify({ userId: currentUser.userId, userName: currentUser.name, action, target })
     }).catch(()=>{});
   };
+
+  // 저장 전 최신 데이터 fetch → 병합 후 저장 (동시 편집 충돌 방지)
+  const autoSave = async (localRecords) => {
+    setSyncStatus("saving");
+    try {
+      // 1. 현재 Sheets에 저장된 최신 데이터 불러오기
+      const latestRes = await fetch("/api/records");
+      const latestData = await latestRes.json();
+      const sheetsRecords = latestData.records || [];
+
+      // 2. 병합: ID 기준으로 합치기
+      //    - Sheets에만 있는 기록 (다른 사람이 추가한 것) → 유지
+      //    - local에만 있는 기록 (내가 추가한 것) → 추가
+      //    - 둘 다 있는 기록 → updatedAt 최신 것 사용
+      const sheetsMap = new Map(sheetsRecords.map(r => [r.id, r]));
+      const localMap = new Map(localRecords.map(r => [r.id, r]));
+      const allIds = new Set([...sheetsMap.keys(), ...localMap.keys()]);
+
+      const merged = [];
+      allIds.forEach(id => {
+        const s = sheetsMap.get(id);
+        const l = localMap.get(id);
+        if (!l) {
+          // Sheets에만 있음 (다른 사람이 추가) → 유지
+          merged.push(s);
+        } else if (!s) {
+          // local에만 있음 (내가 추가) → 추가
+          merged.push(l);
+        } else {
+          // 둘 다 있음 → updatedAt 비교해서 최신 것 사용
+          const sTime = new Date(s.updatedAt || 0).getTime();
+          const lTime = new Date(l.updatedAt || 0).getTime();
+          merged.push(lTime >= sTime ? l : s);
+        }
+      });
+
+      // id 순서 정렬
+      merged.sort((a, b) => (a.id > b.id ? 1 : -1));
+
+      // 3. 병합된 데이터로 화면 업데이트
+      setRecords(merged);
+
+      // 4. Sheets에 저장
+      const res = await fetch("/api/records", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ records: merged }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setSyncStatus("saved");
+        setLastSaved(new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }));
+        setTimeout(() => setSyncStatus("idle"), 2000);
+      } else {
+        setSyncStatus("error");
+      }
+    } catch {
+      setSyncStatus("error");
+    }
+  };
   const [confirmDelete, setConfirmDelete] = useState(null); // { id, name }
   const [undoStack, setUndoStack] = useState([]);
   const [undoNotice, setUndoNotice] = useState(null);
@@ -233,16 +293,20 @@ function BuyerApp({ currentUser, onLogout }) {
   const handleAdd = () => {
     const mx = records.reduce((m, r) => Math.max(m, r.id), 0);
     const newRecord = { ...form, id: mx+1, memos: [], updatedAt: now(), updatedBy: currentUser.name };
-    setRecords((p) => [...p, newRecord]);
+    const updated = [...records, newRecord];
+    setRecords(updated);
     writeLog("기록 추가", `${form.brand} (${form.woojooManager})`);
+    autoSave(updated);
     setModal(null); setForm({ ...EMPTY }); showToast("✓ 기록 추가됨");
   };
   const startEdit = (r) => { setEditingId(r.id); setForm({ ...r }); setModal("edit"); };
   const handleEdit = () => {
     const u = { ...form, id: editingId, updatedAt: now(), updatedBy: currentUser.name };
-    setRecords((p) => p.map((r) => r.id === editingId ? u : r));
+    const updated = records.map((r) => r.id === editingId ? u : r);
+    setRecords(updated);
     if (detail && detail.id === editingId) setDetail(u);
     writeLog("기록 수정", `${form.brand} (${form.woojooManager})`);
+    autoSave(updated);
     setModal(null); setEditingId(null); setForm({ ...EMPTY }); showToast("✓ 수정됨");
   };
 
@@ -257,8 +321,10 @@ function BuyerApp({ currentUser, onLogout }) {
     if (!confirmDelete) return;
     const snapshot = records;
     const rec = records.find(r => r.id === confirmDelete.id);
-    setRecords(p => p.filter(r => r.id !== confirmDelete.id));
+    const updated = records.filter(r => r.id !== confirmDelete.id);
+    setRecords(updated);
     writeLog("기록 삭제", `${rec?.brand} (${rec?.woojooManager})`);
+    autoSave(updated);
     setConfirmDelete(null);
     showToast("✓ 삭제됨");
     const tid = setTimeout(() => setUndoNotice(null), 5000);
@@ -277,14 +343,24 @@ function BuyerApp({ currentUser, onLogout }) {
   };
 
   const openDetail = (r, tab) => { setDetail(r); setDetailTab(tab || "info"); setMemoText(""); setModal("detail"); };
-  const updateStatus = (id, status) => { const rec = records.find((r) => r.id === id); if (!rec) return; const u = { ...rec, status }; setRecords((p) => p.map((r) => r.id === id ? u : r)); if (detail && detail.id === id) setDetail(u); showToast(`✓ 상태 → "${status}"`); };
+  const updateStatus = (id, status) => {
+    const rec = records.find((r) => r.id === id); if (!rec) return;
+    const u = { ...rec, status, updatedAt: now(), updatedBy: currentUser.name };
+    const updated = records.map((r) => r.id === id ? u : r);
+    setRecords(updated);
+    if (detail && detail.id === id) setDetail(u);
+    autoSave(updated);
+    showToast(`✓ 상태 → "${status}"`);
+  };
 
   const addMemo = () => {
     if (!memoText.trim()) return;
     const memo = { id: Date.now(), text: memoText.trim(), date: now() };
-    const u = { ...detail, memos: [...detail.memos, memo] };
-    setRecords((p) => p.map((r) => r.id === detail.id ? u : r));
+    const u = { ...detail, memos: [...detail.memos, memo], updatedAt: now(), updatedBy: currentUser.name };
+    const updated = records.map((r) => r.id === detail.id ? u : r);
+    setRecords(updated);
     setDetail(u); setMemoText("");
+    autoSave(updated);
     showToast("✓ 메모 추가됨");
   };
   const deleteMemo = (memoId) => { const u = { ...detail, memos: detail.memos.filter((m) => m.id !== memoId) }; setRecords((p) => p.map((r) => r.id === detail.id ? u : r)); setDetail(u); };
