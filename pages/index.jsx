@@ -535,12 +535,23 @@ function BuyerApp({ currentUser, onLogout }) {
         </div>
         {filtered.length === 0 ? (<div style={{ background: "#fff", borderRadius: "0 0 12px 12px", border: "1px solid #e8e8e4", textAlign: "center", padding: 40, color: "#999" }}>검색 결과가 없습니다</div>) : (
           <div style={{ background: "#fff", borderRadius: "0 0 12px 12px", border: "1px solid #e8e8e4", overflow: "hidden", minWidth: 900 }}>
-            {filtered.map((r, idx) => (
-              <div key={r.id} style={{ display: "flex", alignItems: "stretch", borderBottom: "1px solid #f0f0ec", cursor: "pointer", background: idx % 2 !== 0 ? "#fafaf8" : "#fff" }} onMouseEnter={(e) => e.currentTarget.style.background = "#f0f4f8"} onMouseLeave={(e) => e.currentTarget.style.background = idx % 2 !== 0 ? "#fafaf8" : "#fff"}>
+            {filtered.map((r, idx) => {
+                const today = new Date(); today.setHours(0,0,0,0);
+                const due = r.dueDate ? new Date(r.dueDate.replace(/\./g, "-")) : null;
+                const isOverdue = due && due < today && (r.status === "펜딩" || r.status === "진행");
+                return (
+              <div key={r.id} style={{ display: "flex", alignItems: "stretch", borderBottom: "1px solid #f0f0ec", cursor: "pointer",
+                background: isOverdue ? "#FFF8F0" : idx % 2 !== 0 ? "#fafaf8" : "#fff",
+                borderLeft: isOverdue ? "3px solid #EF4444" : "3px solid transparent" }}
+                onMouseEnter={(e) => e.currentTarget.style.background = isOverdue ? "#FEF0E8" : "#f0f4f8"}
+                onMouseLeave={(e) => e.currentTarget.style.background = isOverdue ? "#FFF8F0" : idx % 2 !== 0 ? "#fafaf8" : "#fff"}>
                 <div style={S.cell(36)} onClick={() => openDetail(r)}><span style={{ color: "#aaa", fontWeight: 600 }}>{r.id}</span></div>
                 <div style={S.cell(70)} onClick={() => openDetail(r)}><span style={{ fontSize: 11, color: "#2C3E50", fontWeight: 600 }}>{r.woojooManager || "—"}</span></div>
                 <div style={S.cell(78)} onClick={() => openDetail(r)}><span style={{ fontSize: 11, color: "#666" }}>{r.requestDate || "—"}</span></div>
-                <div style={S.cell(78)} onClick={() => openDetail(r)}><span style={{ fontSize: 11, color: r.dueDate ? "#D85A30" : "#ccc", fontWeight: r.dueDate ? 600 : 400 }}>{r.dueDate || "—"}</span></div>
+                <div style={S.cell(78)} onClick={() => openDetail(r)}>
+                  <span style={{ fontSize: 11, color: r.dueDate ? "#D85A30" : "#ccc", fontWeight: r.dueDate ? 600 : 400 }}>{r.dueDate || "—"}</span>
+                  {isOverdue && <span style={{ marginLeft:4, fontSize:9, background:"#EF4444", color:"white", borderRadius:4, padding:"1px 4px", fontWeight:700, flexShrink:0 }}>초과</span>}
+                </div>
                 <div style={S.cell(78)} onClick={() => openDetail(r)}><span style={{ fontSize: 11, color: "#666" }}>{r.completeDate || "—"}</span></div>
                 <div style={S.cell(100)} onClick={() => openDetail(r)}><span style={{ fontWeight: 600, color: "#2C3E50", fontSize: 12 }}>{r.brand}</span></div>
                 <div style={S.cell(80)} onClick={() => openDetail(r)}><span style={{ fontSize: 12 }}>{r.brandManager || "—"}</span></div>
@@ -555,7 +566,8 @@ function BuyerApp({ currentUser, onLogout }) {
                   <button style={S.ib} onClick={(e) => { e.stopPropagation(); requestDelete(r.id); }}>🗑</button>
                 </div>
               </div>
-            ))}
+                );
+              })}
           </div>
         )}
       </div>
