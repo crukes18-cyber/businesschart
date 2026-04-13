@@ -364,7 +364,7 @@ function BuyerApp({ currentUser, onLogout }) {
     tab: (a) => ({ padding: "10px 20px", border: "none", borderBottom: a ? "2px solid #2C3E50" : "2px solid transparent", background: "transparent", fontWeight: a ? 700 : 400, fontSize: 13, cursor: "pointer", color: a ? "#2C3E50" : "#999" }),
     ib: { background: "none", border: "none", cursor: "pointer", padding: "2px 4px", fontSize: 14, opacity: 0.35, lineHeight: 1 },
     cell: (w) => ({ width: w, minWidth: w, padding: "10px 10px", fontSize: 12, display: "flex", alignItems: "center", borderRight: "1px solid #f5f5f0", flexShrink: 0 }),
-    cellF: { flex: 1, padding: "10px 10px", fontSize: 12, display: "flex", alignItems: "center", minWidth: 0 },
+    cellF: { flex: 1, padding: "10px 10px", fontSize: 12, display: "flex", alignItems: "flex-start", minWidth: 0, paddingTop: 12 },
     hCell: (w) => ({ width: w, minWidth: w, padding: "10px 10px", borderRight: "1px solid #3d5266", flexShrink: 0 }),
     hCellF: { flex: 1, padding: "10px 10px", minWidth: 0 },
   };
@@ -555,7 +555,18 @@ function BuyerApp({ currentUser, onLogout }) {
                 <div style={S.cell(78)} onClick={() => openDetail(r)}><span style={{ fontSize: 11, color: "#666" }}>{r.completeDate || "—"}</span></div>
                 <div style={S.cell(100)} onClick={() => openDetail(r)}><span style={{ fontWeight: 600, color: "#2C3E50", fontSize: 12 }}>{r.brand}</span></div>
                 <div style={S.cell(80)} onClick={() => openDetail(r)}><span style={{ fontSize: 12 }}>{r.brandManager || "—"}</span></div>
-                <div style={S.cellF} onClick={() => openDetail(r)}><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.content}</span></div>
+                <div style={S.cellF} onClick={() => openDetail(r)}>
+                  <span style={{
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                    lineHeight: 1.5,
+                    whiteSpace: "pre-wrap",
+                    fontSize: 12,
+                    wordBreak: "break-word"
+                  }}>{r.content}</span>
+                </div>
                 <div style={S.cell(55)}><select value={r.status} onChange={(e) => updateStatus(r.id, e.target.value)} onClick={(e) => e.stopPropagation()} style={{ border: "none", background: "transparent", fontSize: 11, fontWeight: 600, color: STATUS_COLORS[r.status], cursor: "pointer", outline: "none", width: "100%" }}>{STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}</select></div>
                 <div style={{ ...S.cellF, maxWidth: 150 }} onClick={() => openDetail(r)}><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 11, color: "#666" }}>{r.nextStep || "—"}</span></div>
                 <div style={S.cell(100)} onClick={() => openDetail(r)}><span style={{ fontSize:10, color:"#aaa" }}>{r.updatedAt || "—"}</span></div>
